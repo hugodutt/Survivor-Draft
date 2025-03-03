@@ -8,18 +8,23 @@ import { nanoid } from 'nanoid';
 
 const app = express();
 const httpServer = createServer(app);
+
+// Configuração do CORS antes de qualquer rota
+app.use(cors({
+  origin: '*', // Permite todas as origens
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 const io = new Server(httpServer, {
   cors: {
-    origin: ['https://survivor-draft-eight.vercel.app', process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'],
-    methods: ['GET', 'POST']
+    origin: '*', // Permite todas as origens
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
-app.use(cors({
-  origin: ['https://survivor-draft-eight.vercel.app', process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'],
-  methods: ['GET', 'POST'],
-  credentials: true
-}));
 app.use(express.json());
 
 const roomManager = new RoomManager();
