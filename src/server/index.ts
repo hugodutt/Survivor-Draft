@@ -10,12 +10,16 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000',
+    origin: ['https://survivor-draft-eight.vercel.app', process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'],
     methods: ['GET', 'POST']
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: ['https://survivor-draft-eight.vercel.app', process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 app.use(express.json());
 
 const roomManager = new RoomManager();
