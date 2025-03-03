@@ -9,7 +9,16 @@ import { nanoid } from 'nanoid';
 const app = express();
 const httpServer = createServer(app);
 
-// Configuração do CORS antes de qualquer rota
+// Configuração do CORS usando o pacote cors
+app.use(cors({
+  origin: 'https://survivor-draft-eight.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  maxAge: 86400
+}));
+
+// Middleware para logging
 app.use((req, res, next) => {
   console.log('Request received:', {
     method: req.method,
@@ -17,28 +26,15 @@ app.use((req, res, next) => {
     origin: req.headers.origin,
     headers: req.headers
   });
-
-  // Permitir todas as origens
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS request');
-    return res.status(200).end();
-  }
   next();
 });
 
 const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    origin: 'https://survivor-draft-eight.vercel.app',
     methods: ['GET', 'POST', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: '*'
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
   }
 });
 
