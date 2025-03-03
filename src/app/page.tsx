@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Scenario } from '@/server/types';
-import { API_URL } from '@/config/api';
+import { API_ENDPOINTS } from '@/config/api';
 
 export default function Home() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function Home() {
 
   useEffect(() => {
     // Carrega os cenários disponíveis
-    fetch(`${API_URL}/api/scenarios`)
+    fetch(API_ENDPOINTS.scenarios)
       .then(res => res.json())
       .then(data => setScenarios(data))
       .catch(err => console.error('Failed to load scenarios:', err));
@@ -39,7 +39,7 @@ export default function Home() {
     setLoading(true);
     
     try {
-      const response = await fetch(`${API_URL}/api/rooms`, {
+      const response = await fetch(API_ENDPOINTS.rooms, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export default function Home() {
     try {
       const normalizedCode = roomCode.toUpperCase();
       console.log(`Attempting to join room ${normalizedCode} as ${playerName}`);
-      const response = await fetch(`${API_URL}/api/rooms/${normalizedCode}/join`, {
+      const response = await fetch(API_ENDPOINTS.joinRoom(normalizedCode), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
