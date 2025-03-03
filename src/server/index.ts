@@ -11,17 +11,20 @@ const httpServer = createServer(app);
 
 // Configuração do CORS antes de qualquer rota
 app.use(cors({
-  origin: '*', // Permite todas as origens
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  origin: true, // Permite todas as origens
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  credentials: true,
+  maxAge: 86400 // Cache preflight por 24 horas
 }));
 
 const io = new Server(httpServer, {
   cors: {
-    origin: '*', // Permite todas as origens
-    methods: ['GET', 'POST'],
-    credentials: true
+    origin: true, // Permite todas as origens
+    methods: ['GET', 'POST', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
   }
 });
 
