@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Scenario } from '@/server/types';
+import { API_URL } from '@/config/api';
 
 export default function Home() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function Home() {
 
   useEffect(() => {
     // Carrega os cenários disponíveis
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/scenarios`)
+    fetch(`${API_URL}/api/scenarios`)
       .then(res => res.json())
       .then(data => setScenarios(data))
       .catch(err => console.error('Failed to load scenarios:', err));
@@ -38,7 +39,7 @@ export default function Home() {
     setLoading(true);
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms`, {
+      const response = await fetch(`${API_URL}/api/rooms`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

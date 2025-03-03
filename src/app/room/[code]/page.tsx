@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { Room } from '@/server/types';
+import { API_URL } from '@/config/api';
 
 export default function RoomPage() {
   const params = useParams();
@@ -16,7 +17,7 @@ export default function RoomPage() {
   useEffect(() => {
     const fetchRoom = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}`);
+        const response = await fetch(`${API_URL}/api/rooms/${params.code}`);
         if (!response.ok) {
           throw new Error('Room not found');
         }
@@ -32,7 +33,7 @@ export default function RoomPage() {
   }, [params.code, router]);
 
   useEffect(() => {
-    const newSocket = io(process.env.NEXT_PUBLIC_API_URL as string);
+    const newSocket = io(API_URL);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -55,7 +56,7 @@ export default function RoomPage() {
 
   const handleReady = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}/ready`, {
+      const response = await fetch(`${API_URL}/api/rooms/${params.code}/ready`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +76,7 @@ export default function RoomPage() {
 
   const handleStartGame = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}/start`, {
+      const response = await fetch(`${API_URL}/api/rooms/${params.code}/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +96,7 @@ export default function RoomPage() {
 
   const handleSelectItem = async (itemId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}/select-item`, {
+      const response = await fetch(`${API_URL}/api/rooms/${params.code}/select-item`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +119,7 @@ export default function RoomPage() {
 
   const handleVote = async (votedPlayerId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}/vote`, {
+      const response = await fetch(`${API_URL}/api/rooms/${params.code}/vote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
