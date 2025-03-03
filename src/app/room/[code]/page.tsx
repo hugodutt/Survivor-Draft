@@ -1,126 +1,141 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { Room } from '@/server/types';
 
 export default function RoomPage() {
   const params = useParams();
+  const router = useRouter();
   const [room, setRoom] = useState<Room | null>(null);
   const [error, setError] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const playerName = localStorage.getItem('playerName');
-    if (!playerName) {
-      setError('Player name not found');
-      return;
-    }
+    const fetchRoom = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}`);
+        if (!response.ok) {
+          throw new Error('Room not found');
+        }
+        const data = await response.json();
+        setRoom(data);
+      } catch (error) {
+        console.error('Error fetching room:', error);
+        router.push('/');
+      }
+    };
 
-    console.log('Initializing socket connection...');
-    const newSocket = io('http://localhost:3001', {
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5
-    });
+    fetchRoom();
+  }, [params.code, router]);
+
+  useEffect(() => {
+    const newSocket = io(process.env.NEXT_PUBLIC_API_URL as string);
+    setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      console.log('Connected to server with ID:', newSocket.id);
-      setSocket(newSocket);
-      setError(''); // Limpa erros anteriores
-      
-      console.log(`Attempting to join room ${params.code} as ${playerName}`);
-      newSocket.emit('join-room', params.code, playerName);
+      console.log('Connected to server');
+      newSocket.emit('join-room', params.code);
     });
 
-    newSocket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-      setError('Failed to connect to server. Please check your connection and try again.');
-    });
-
-    newSocket.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`Attempting to reconnect... (attempt ${attemptNumber})`);
-      setError(`Connection lost. Attempting to reconnect... (${attemptNumber})`);
-    });
-
-    newSocket.on('reconnect', () => {
-      console.log('Reconnected to server');
-      setError('');
-      
-      // Re-join room after reconnection
-      if (playerName && params.code) {
-        console.log(`Re-joining room ${params.code} as ${playerName}`);
-        newSocket.emit('join-room', params.code, playerName);
-      }
-    });
-
-    newSocket.on('error', (error: { message: string }) => {
-      console.error('Socket error:', error);
-      setError(error.message);
-    });
-
-    newSocket.on('room-updated', (updatedRoom: Room) => {
-      console.log('Room updated:', updatedRoom);
-      if (!updatedRoom || !Array.isArray(updatedRoom.players)) {
-        console.error('Invalid room data received:', updatedRoom);
-        return;
-      }
+    newSocket.on('room-update', (updatedRoom: Room) => {
       setRoom(updatedRoom);
-      setError(''); // Limpa qualquer erro anterior
     });
 
-    newSocket.on('draft-started', ({ room: updatedRoom, message }: { room: Room; message: string }) => {
-      console.log('Draft started:', updatedRoom);
-      if (!updatedRoom || !Array.isArray(updatedRoom.players)) {
-        console.error('Invalid room data received:', updatedRoom);
-        return;
-      }
-      setRoom(updatedRoom);
-      setMessage(message);
+    newSocket.on('error', (error: string) => {
+      setError(error);
     });
 
-    newSocket.on('message', (newMessage: string) => {
-      console.log('Message received:', newMessage);
-      setMessage(newMessage);
-    });
-
-    // Cleanup na desmontagem do componente
     return () => {
-      console.log('Cleaning up socket connection...');
       newSocket.disconnect();
-      setSocket(null);
-      setRoom(null);
     };
   }, [params.code]);
 
-  const toggleReady = () => {
-    if (socket && room) {
-      console.log('Toggling ready state');
-      socket.emit('player-ready', room.code);
+  const handleReady = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}/ready`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ playerId: socket?.id }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to toggle ready state');
+      }
+      const data = await response.json();
+      setRoom(data);
+    } catch (error) {
+      console.error('Error toggling ready state:', error);
+      setError('Failed to toggle ready state');
     }
   };
 
-  const startGame = () => {
-    if (socket && room) {
-      console.log('Starting game');
-      socket.emit('start-game', room.code);
+  const handleStartGame = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ playerId: socket?.id }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to start game');
+      }
+      const data = await response.json();
+      setRoom(data);
+    } catch (error) {
+      console.error('Error starting game:', error);
+      setError('Failed to start game');
     }
   };
 
-  const selectItem = (itemId: string) => {
-    if (socket && room) {
-      console.log('Selecting item:', itemId);
-      socket.emit('select-item', room.code, itemId);
+  const handleSelectItem = async (itemId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}/select-item`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          playerId: socket?.id,
+          itemId: itemId
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to select item');
+      }
+      const data = await response.json();
+      setRoom(data);
+    } catch (error) {
+      console.error('Error selecting item:', error);
+      setError('Failed to select item');
     }
   };
 
-  const voteForPlayer = (playerId: string) => {
-    if (socket && room) {
-      console.log('Voting for player:', playerId);
-      socket.emit('vote', room.code, playerId);
+  const handleVote = async (votedPlayerId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rooms/${params.code}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          playerId: socket?.id,
+          votedPlayerId: votedPlayerId
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to vote');
+      }
+      const data = await response.json();
+      setRoom(data);
+    } catch (error) {
+      console.error('Error voting:', error);
+      setError('Failed to vote');
     }
   };
 
@@ -383,7 +398,7 @@ export default function RoomPage() {
                             return (
                               <button
                                 key={item.id}
-                                onClick={() => selectItem(item.id)}
+                                onClick={() => handleSelectItem(item.id)}
                                 disabled={!isCurrentTurn || isItemTaken}
                                 className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
                                   isItemTaken
@@ -439,7 +454,7 @@ export default function RoomPage() {
                             return (
                               <button
                                 key={itemId}
-                                onClick={() => selectItem(itemId)}
+                                onClick={() => handleSelectItem(itemId)}
                                 disabled={isItemUsed}
                                 className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
                                   isItemUsed
@@ -490,17 +505,17 @@ export default function RoomPage() {
                           {room.players.map(player => {
                             const selectedItem = room.scenario.items.find(item => item.id === player.currentItemChoice);
                             const votes = room.votes || {};
-                            const currentVote = votes[socket.id as keyof typeof votes];
+                            const currentVote = votes[socket?.id as keyof typeof votes];
                             const hasVoted = currentVote !== undefined;
                             const isVotedByCurrentPlayer = hasVoted && currentVote === player.id;
 
                             return (
                               <button
                                 key={player.id}
-                                onClick={() => voteForPlayer(player.id)}
-                                disabled={player.id === socket.id || hasVoted}
+                                onClick={() => handleVote(player.id)}
+                                disabled={player.id === socket?.id || hasVoted}
                                 className={`relative p-6 rounded-xl border-2 transition-all duration-200 ${
-                                  player.id === socket.id
+                                  player.id === socket?.id
                                     ? 'bg-gray-800/50 border-gray-600/50 cursor-not-allowed'
                                     : isVotedByCurrentPlayer
                                     ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10 border-purple-500/30'
@@ -511,7 +526,7 @@ export default function RoomPage() {
                               >
                                 <div className="flex items-center gap-4">
                                   <div className="bg-gray-900/50 p-3 rounded-lg w-12 h-12 flex items-center justify-center">
-                                    <span className="text-2xl">{player.id === socket.id ? '👤' : '🎯'}</span>
+                                    <span className="text-2xl">{player.id === socket?.id ? '👤' : '🎯'}</span>
                                   </div>
                                   <div>
                                     <h3 className="font-medium text-lg text-white">{player.name}</h3>
@@ -520,10 +535,10 @@ export default function RoomPage() {
                                     </p>
                                   </div>
                                 </div>
-                                {(player.id === socket.id || hasVoted) && (
+                                {(player.id === socket?.id || hasVoted) && (
                                   <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm rounded-xl">
                                     <span className="text-gray-400 font-medium">
-                                      {player.id === socket.id ? "Can't vote for yourself" : 'Already voted'}
+                                      {player.id === socket?.id ? "Can't vote for yourself" : 'Already voted'}
                                     </span>
                                   </div>
                                 )}
@@ -542,7 +557,7 @@ export default function RoomPage() {
                     <div className="space-y-4">
                       {currentPlayer && (
                         <button
-                          onClick={toggleReady}
+                          onClick={handleReady}
                           className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg ${
                             currentPlayer.isReady 
                               ? 'bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-300 border-2 border-red-500/30 hover:from-red-500/30 hover:to-red-600/30' 
@@ -560,7 +575,7 @@ export default function RoomPage() {
                       
                       {currentPlayer?.isHost && (
                         <button
-                          onClick={startGame}
+                          onClick={handleStartGame}
                           disabled={!room.players.every(p => p.isReady)}
                           className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg ${
                             room.players.every(p => p.isReady)
