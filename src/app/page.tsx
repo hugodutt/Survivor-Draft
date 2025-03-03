@@ -88,7 +88,7 @@ export default function Home() {
     try {
       const normalizedCode = roomCode.toUpperCase();
       console.log(`Attempting to join room ${normalizedCode} as ${playerName}`);
-      const response = await fetch(`http://localhost:3001/api/rooms/${normalizedCode}/join`, {
+      const response = await fetch(`${API_URL}/api/rooms/${normalizedCode}/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
